@@ -1,0 +1,7 @@
+example/audio/
+example/out/
+__pycache__/
+*.pyc
+film-notes.json
+example/kettle/
+films/

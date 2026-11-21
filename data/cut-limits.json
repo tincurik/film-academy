@@ -1,0 +1,7 @@
+{
+  "note": "Limits for cut craft, measured as library percentiles over 205 published brand and product films (cut times and beats only, no footage kept). A check applies only to films with at least min_cuts cuts.",
+  "min_cuts": 8,
+  "no_burst": {"max_run": 8, "under_s": 0.6, "severity": "stop", "why": "a run of more than 8 shots in a row under 0.6 s is a burst; library p95. Hold the shots or cut fewer; a burst belongs at the end of a film, not its middle"},
+  "hold_floor": {"max_share": 0.38, "under_s": 0.6, "severity": "warn", "why": "more than 38% of shots under 0.6 s; library p90"},
+  "cut_every_beat": {"max_run": 6, "tolerance_s": 0.08, "severity": "stop", "why": "more than 6 cuts in a row exactly one beat apart (library p95): skip beats and cut on the phrase. Needs --bpm"}
+}

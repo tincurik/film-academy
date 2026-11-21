@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>film</title>
+<style>
+/* The film is a page: window.seek(t) draws it as a pure function of t. Everything it shows comes from film.config.js (window.FILM), so a first film is
+   edited in that one file. To go further, edit this page: new scene types are one function each (see SCENES below). */
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;font-family:system-ui,"Helvetica Neue","DejaVu Sans",Arial,sans-serif;overflow:hidden}
+.scene{position:absolute;inset:0;display:none;overflow:hidden}
+.dark{background:#0f1115;color:#f4f1ea}.light{background:#f3efe6;color:#15171c}.accent{color:#15171c}
+.glow{position:absolute;width:1400px;height:1400px;border-radius:50%;filter:blur(120px);opacity:.35}
+.big{position:absolute;font-weight:800;letter-spacing:-.04em;line-height:1;white-space:nowrap}
+.small{position:absolute;font-size:44px;font-weight:500;opacity:.75;white-space:nowrap}
+.ring{position:absolute;width:520px;height:520px;left:1180px;top:280px}
+.card{position:absolute;left:560px;top:250px;width:800px;background:#fff;border-radius:28px;box-shadow:0 40px 120px rgba(20,20,30,.25);overflow:hidden;color:#15171c}
+.bar{height:64px;background:#ece7db;font-size:26px;line-height:64px;padding-left:28px;font-weight:600;color:#6a665c}
+.row{position:absolute;left:48px;right:48px;height:96px;border-radius:16px;background:#f6f3ec;font-size:40px;font-weight:600;line-height:96px;padding-left:36px}
+.row b{position:absolute;right:36px;font-weight:800}
+.tick{position:absolute;left:-12px;top:-12px;width:38px;height:38px;border-radius:50%;background:#18a058;color:#fff;font-size:26px;line-height:38px;text-align:center;font-style:normal}
+.chart{position:absolute;left:300px;bottom:210px;display:flex;gap:90px;align-items:flex-end}
+.col{width:190px;border-radius:14px 14px 0 0}
+.btn{position:absolute;left:760px;top:400px;width:400px;height:200px;border-radius:100px;background:#15171c;color:#f3efe6;font-size:64px;font-weight:700;text-align:center;line-height:200px}
+.ripple{position:absolute;border-radius:50%;border:6px solid var(--accent)}
+.win{position:absolute;background:#fff;border-radius:22px;box-shadow:0 40px 120px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{height:52px;line-height:52px;font-size:22px}
+.win img{display:block;width:100%}
+</style></head><body>
+<div id="stage"></div>
+<script src="film.config.js"></script>
+<script>
+const F = window.FILM, BAR = F.bar || 2, ACC = F.accent || "#f5a524";
+const stage = document.getElementById("stage");
+stage.style.setProperty("--accent", ACC);
+const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = cl(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2 };       // cubic in-out
+const out = x => 1 - Math.pow(1 - cl(x), 3);
+function el(parent, cls, text, css) { const e = document.createElement("div"); e.className = cls; if (text != null) e.textContent = text; if (css) e.style.cssText = css; parent.appendChild(e); return e }
+const MISSING = (window.MISSING = []);
+const pad = n => String(n).padStart(5, "0");
+
+// ---- the scenes: each builds its DOM once and returns draw(p) with p = seconds into the scene --------------------------------
+const SCENES = [];
+const add = (bars, mk, extra = {}) => SCENES.push({ bars, mk, ...extra });
+
+add(1, (s, len) => {                                                  // the hook: frame 0 is already the payoff
+  s.className += " dark";
+  el(s, "glow", "", `background:${ACC};left:-300px;top:-500px`);
+  const [a, b] = F.hook, size = Math.max(90, Math.min(300, 1000 / (.55 * Math.max(a.length, b.length))));
+  const L1 = el(s, "big", a, `left:180px;top:${520 - size}px;font-size:${size}px;color:${ACC}`);
+  const L2 = el(s, "big", b, `left:180px;top:${530}px;font-size:${size * .62}px`);
+  const sub = F.tagline ? el(s, "small", F.tagline, "left:190px;top:850px") : null;
+  s.insertAdjacentHTML("beforeend", `<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#2a2d35" stroke-width="5"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="${ACC}" stroke-width="5" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="276.5" stroke-dashoffset="276.5"/></svg>`);
+  const arc = s.querySelector("#arc"), glow = s.querySelector(".glow");
+  return p => {
+    arc.style.strokeDashoffset = 276.5 * (1 - ease(p / (len * .9)));
+    L1.style.transform = `translateX(${(1 - out(p / .5)) * -40}px) scale(${1 + p * .015})`;
+    L2.style.transform = `translateX(${(1 - out((p - .1) / .5)) * -60}px)`;
+    if (sub) sub.style.opacity = .75 * out((p - .35) / .4);
+    glow.style.transform = `translate(${p * 40}px,${p * 25}px)`;
+  };
+}, { cards: () => [F.hook.join(" ") + (F.tagline ? " " + F.tagline : "")] });
+
+if (F.recording) {                                                      // the product, filmed: a screen recording played frame by frame
+  const R = F.recording;
+  add(R.bars, (s, len) => {
+    s.className += " light";
+    el(s, "glow", "", `background:${ACC};right:-500px;bottom:-700px`);
+    const w = R.width || 1500, win = el(s, "win", null, `left:${(1920 - w) / 2}px;top:${R.top || 120}px;width:${w}px`);
+    el(win, "bar", F.name);
+    const img = document.createElement("img"); win.appendChild(img);
+    let shown = -1;
+    return async p => {
+      win.style.transform = `translateY(${(1 - out(p / .45)) * 140}px) scale(${1 + .03 * p / len})`;
+      const i = Math.min(R.n, Math.max(1, 1 + Math.floor(p * R.fps * (R.speed || 1))));
+      if (i !== shown) {
+        shown = i; img.src = `${R.dir}/${pad(i)}.jpg`;
+        try { await img.decode() } catch (e) { MISSING.push(img.src) }
+      }
+    };
+  }, { cards: () => [F.name + " " + (F.points || []).map(x => x.join(" ")).join(" ")] });
+} else if (F.points && F.points.length) {                              // the product doing the job: a card whose rows tick in turn
+  add(1, (s, len) => {
+    s.className += " light";
+    el(s, "glow", "", `background:${ACC};right:-500px;bottom:-700px`);
+    const n = F.points.length, card = el(s, "card", null, `height:${64 + 40 + n * 130}px;top:${Math.round((1080 - (64 + 40 + n * 130)) / 2)}px`);
+    el(card, "bar", F.name);
+    const ticks = F.points.map(([k, v], i) => {
+      const row = el(card, "row", k, `top:${96 + i * 130}px`); if (v) { const b = document.createElement("b"); b.textContent = v; row.appendChild(b) }
+      const t = document.createElement("i"); t.className = "tick"; t.textContent = "✓"; row.appendChild(t); return t;
+    });
+    return p => {
+      card.style.transform = `translateY(${(1 - out(p / .45)) * 140}px) scale(${1 + p * .03})`;
+      ticks.forEach((t, i) => { const k = out((p - .5 - i * .3) / .25); t.style.transform = `scale(${k})`; t.style.opacity = k > 0 ? 1 : 0 });
+    };
+  }, { cards: () => [F.name + " " + F.points.map(x => x.join(" ")).join(" ")] });
+}
+
+if (F.slam) add(.5, (s, len) => {                                      // type that moves: the words slam in from opposite sides
+  s.className += " accent"; s.style.background = ACC;
+  const w = F.slam.split(" "), size = Math.max(110, Math.min(300, 1500 / (.55 * Math.max(...w.map(x => x.length), 4))));
+  const els = w.map((x, i) => el(s, "big", x, `left:200px;top:${260 + i * size * 1.05}px;font-size:${size}px`));
+  return p => els.forEach((e, i) => e.style.transform = `translateX(${(1 - out((p - i * .1) / .3)) * (i % 2 ? 1100 : -900)}px) scale(${1 + p * .02})`);
+}, { cards: () => [F.slam] });
+
+if (F.number) add(1, (s, len) => {                                     // a number that grows
+  s.className += " dark";
+  const N = F.number;
+  if (N.label) el(s, "small", N.label, "left:300px;top:150px;font-size:56px;opacity:.9");
+  const ch = el(s, "chart"), cols = [150, 330, 600].map((h, i) => [el(ch, "col", null, `background:${["#4a4e59", "#8a8f9c", ACC][i]}`), h]);
+  const n = el(s, "big", "", `right:230px;top:330px;font-size:260px;color:${ACC}`);
+  return p => {
+    cols.forEach(([c, h], i) => c.style.height = h * out((p - .15 - i * .22) / .7) + "px");
+    const v = (N.from == null ? 1 : N.from) + (N.value - (N.from == null ? 1 : N.from)) * out((p - .4) / 1.0);
+    n.textContent = Math.round(v) + (N.suffix || "");
+    ch.style.transform = `translateX(${p * -18}px)`;
+  };
+}, { cards: () => [(F.number.label || "") + " " + F.number.value + (F.number.suffix || "")] });
+
+if (F.action) add(.5, (s, len) => {                                    // one press, one sound
+  s.className += " light";
+  const rip = el(s, "ripple"), b = el(s, "btn", F.action);
+  return p => {
+    const press = cl((p - .2) / .07) - cl((p - .31) / .12);
+    b.style.transform = `scale(${1 - .08 * press}) translateY(${(1 - out(p / .3)) * 80}px)`;
+    const r = cl((p - .27) / .22), z = 220 + r * 900;
+    Object.assign(rip.style, { width: z + "px", height: z + "px", left: 960 - z / 2 + "px", top: 500 - z / 2 + "px", opacity: r > 0 && r < 1 ? 1 - r : 0 });
+  };
+}, { cards: () => [F.action], press: .27 });
+
+add(1, (s, len) => {                                                   // end card: the mark lands on the drop, then one ask
+  s.className += " dark";
+  el(s, "glow", "", `background:${ACC};left:500px;top:-200px`);
+  const size = Math.max(110, Math.min(230, 1500 / (.6 * F.name.length)));
+  const m = el(s, "big", F.name, `left:0;right:0;text-align:center;top:${540 - size * .9}px;font-size:${size}px`);
+  const a = F.url ? el(s, "small", F.url, "left:0;right:0;text-align:center;top:680px;font-size:60px;opacity:.9") : null;
+  return p => {
+    m.style.transform = `scale(${1.12 - .12 * out(p / .5)})`; m.style.opacity = out(p / .2);
+    if (a) { a.style.opacity = out((p - .5) / .4); a.style.transform = `translateY(${(1 - out((p - .5) / .5)) * 24}px)` }
+  };
+}, { cards: () => [F.name + (F.url ? " " + F.url : "")], last: true });
+
+// ---- timeline, built from the scene list ------------------------------------------------------------------------------------
+let t0 = 0;
+SCENES.forEach(sc => { sc.a = t0; sc.len = sc.bars * BAR; sc.b = t0 + sc.len; t0 = sc.b;
+  sc.el = el(stage, "scene"); sc.draw = sc.mk(sc.el, sc.len); });
+const TOTAL = t0;
+window.ready = Promise.resolve();
+window.duration = () => TOTAL;
+window.timeline = () => SCENES.slice(1).map(s => s.a);                  // the real cut times: ffmpeg's scene score barely sees eased transitions
+window.cards = () => SCENES.flatMap(s => s.cards());                    // the text on each card, for words-per-card without OCR
+window.cues = () => {                                                   // sounds that belong on a frame
+  const c = [{ t: 0, sfx: "impact", db: -8 }];
+  SCENES.slice(1).forEach(s => c.push({ t: +(s.a - .12).toFixed(3), sfx: "whoosh", db: -16 }));
+  SCENES.forEach(s => { if (s.press) c.push({ t: +(s.a + s.press).toFixed(3), sfx: "click", db: -8 }) });
+  const last = SCENES[SCENES.length - 1]; c.push({ t: last.a, sfx: "impact", db: -4 });
+  return c;
+};
+window.seek = async t => {
+  stage.style.transform = `scale(${innerWidth / 1920})`;
+  for (const sc of SCENES) {
+    const on = t >= sc.a && (t < sc.b || (sc.last && t <= sc.b));
+    sc.el.style.display = on ? "block" : "none";
+    if (on) {
+      sc.el.style.transform = `scale(${1 + .07 * (t - sc.a) / sc.len})`;     // a slow push-in on every scene: the picture never holds dead still
+      await sc.draw(t - sc.a);
+    }
+  }
+};
+window.seek(0);
+</script></body></html>
