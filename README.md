@@ -9,7 +9,7 @@ A Claude Code skill for making product, demo and launch films the way a build sy
 ## The start: one command
 
 ```bash
-git clone https://github.com/tincurik/film-academy ~/.claude/skills/film-academy
+git clone <this repo's URL> ~/.claude/skills/film-academy
 cd ~/.claude/skills/film-academy
 pip install -r requirements.txt && playwright install chromium       # plus ffmpeg from your package manager
 python film.py new "Acme" --promise "Plan your week in one tap." --url "acme.example"
