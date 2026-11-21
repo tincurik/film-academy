@@ -44,9 +44,10 @@ const add = (bars, mk, extra = {}) => SCENES.push({ bars, mk, ...extra });
 add(1, (s, len) => {                                                  // the hook: frame 0 is already the payoff
   s.className += " dark";
   el(s, "glow", "", `background:${ACC};left:-300px;top:-500px`);
-  const [a, b] = F.hook, size = Math.max(90, Math.min(300, 1000 / (.55 * Math.max(a.length, b.length))));
-  const L1 = el(s, "big", a, `left:180px;top:${520 - size}px;font-size:${size}px;color:${ACC}`);
-  const L2 = el(s, "big", b, `left:180px;top:${530}px;font-size:${size * .62}px`);
+  const [a, b] = F.hook, fit = (txt, lo, hi) => Math.max(lo, Math.min(hi, 1000 / (.55 * Math.max(txt.length, 1))));
+  const s1 = fit(a, 90, 300), s2 = Math.min(s1 * .72, fit(b, 70, 220));
+  const L1 = el(s, "big", a, `left:180px;top:${520 - s1}px;font-size:${s1}px;color:${ACC}`);
+  const L2 = el(s, "big", b, `left:180px;top:540px;font-size:${s2}px`);
   const sub = F.tagline ? el(s, "small", F.tagline, "left:190px;top:850px") : null;
   s.insertAdjacentHTML("beforeend", `<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#2a2d35" stroke-width="5"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="${ACC}" stroke-width="5" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="276.5" stroke-dashoffset="276.5"/></svg>`);
   const arc = s.querySelector("#arc"), glow = s.querySelector(".glow");
