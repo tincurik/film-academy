@@ -64,7 +64,7 @@ Only record what you may publish. Frames of your own app are yours; third-party 
 
 ## Licences and what is not here
 
-- Code: MIT (`LICENSE`).
+- Code: Apache License 2.0 (`LICENSE`) — commercial use permitted; attribution to Tin Curik required under Section 4(d) (`NOTICE`).
 - **Placeholder audio is generated** by `academy/placeholder_audio.py` (sine pads, a kick, noise sweeps): no third-party sound, and the generated files are CC0. A first film is not silent, but it is placeholder music: pass `--music your-track.mp3 --drop-bar N` to `new` (or edit `plan.json`).
 - **No music is shipped.** Bring a track you may publish: a licence that allows redistributing the film. "Free to use in videos" is often not the same as "free to redistribute the file". Put your own sound effects as `impact.wav`, `whoosh.wav`, `click.wav` in `films/<slug>/sfx/`.
 - No reference films or clips are included, only measured numbers (`data/`). The playbook quotes short passages from public pages, each with its link.
